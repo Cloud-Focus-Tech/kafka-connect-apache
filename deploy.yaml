@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apache-connect
+  namespace: kafka-connect-apache
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: apache-connect
+  template:
+    metadata:
+      labels:
+        app: apache-connect
+    spec:
+      containers:
+        - name: connect
+          image: ghcr.io/<org>/apache-connect:0.1.0
+          ports:
+            - containerPort: 8083
+          env:
+            - name: BOOTSTRAP_SERVERS
+              valueFrom:
+                secretKeyRef:
+                  name: ccloud-kafka
+                  key: BOOTSTRAP_SERVERS
+            - name: KAFKA_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ccloud-kafka
+                  key: KAFKA_API_KEY
+            - name: KAFKA_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: ccloud-kafka
+                  key: KAFKA_API_SECRET
+          volumeMounts:
+            - name: connect-config
+              mountPath: /opt/kafka/config/connect-distributed.properties
+              subPath: connect-distributed.properties
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8083
+            initialDelaySeconds: 20
+            periodSeconds: 10
+      volumes:
+        - name: connect-config
+          configMap:
+            name: connect-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apache-connect
+  namespace: kafka-connect-apache
+spec:
+  type: ClusterIP
+  selector:
+    app: apache-connect
+  ports:
+    - name: rest
+      port: 8083
+      targetPort: 8083

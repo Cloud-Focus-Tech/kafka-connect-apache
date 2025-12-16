@@ -46,15 +46,38 @@ The following steps will be used to generate an docker image that can be run on 
 1.  Copy any plugins desired to the **"/plugins"** folder. 
 2.  Build and push the image
    
-   ```bash
-       docker build -t ghcr.io/cloud-focus-tech/kafka-connect-apache:0.0.1 .
-       
-       docker push ghcr.io/cloud-focus-tech/kafka-connect-apache:0.0.1
-   ```
+    ```bash
+    docker build -t ghcr.io/cloud-focus-tech/kafka-connect-apache:0.0.1 .
+    
+    docker push ghcr.io/cloud-focus-tech/kafka-connect-apache:0.0.1
+    ```
    
 
 ## 2 - Deploy the needed Kubernetes Assets
 
-
+1. Create a Namespace for the Cluster
+   ```bash
+    kubectl create namespace kafka-connect-apache
+    kubectl label ns kafka-connect-apache pod-security.kubernetes.io/enforce=privileged  
+    kubectl label ns kafka-connect-apache pod-security.kubernetes.io/audit=privileged 
+    kubectl label ns kafka-connect-apache pod-security.kubernetes.io/warn=privileged
+   ```
+2. Deploy the Kakfa Cluster Secrets
+   ```bash
+   kubectl -n kafka-connect-apache create secret generic ccloud-kafka \
+    --from-literal=BOOTSTRAP_SERVERS='<CCLOUD_BOOTSTRAP>:9092' \
+    --from-literal=KAFKA_API_KEY='<CCLOUD_KEY>' \
+    --from-literal=KAFKA_API_SECRET='<CCLOUD_SECRET>'
+   ```
+3. Deploy the Configmap (for connect settings)
+    ```bash
+    kubectl apply -f connect-config.yaml
+    ```
+4. Deploy the Connect Cluster (Deployment and the Service)
+    ```bash
+    kubectl apply -f deploy.yaml
+    ```
+   
+   
 
 
